@@ -17,9 +17,9 @@ const checkAuth = async () => {
 
 const logout = async () => {
     try {
-        await axios.post('/logout');
+        await axios.post('/api/logout');
         isAuthenticated.value = false;
-        router.push('/login');
+        router.push('/');
     } catch (error) {
         console.error('Erreur lors de la déconnexion', error);
     }

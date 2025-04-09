@@ -23,13 +23,30 @@ export default defineConfig({
             refresh: true,
         }),
         vue({
-            // template: {
-            //     transformAssetUrls: {
-            //         base: null,
-            //         includeAbsoluteUrls: false,
-            //     }
-            // }
+            template: {
+                transformAssetUrls: {
+                    base: null,
+                    includeAbsoluteUrls: false,
+                }
+            }
         }),
         tailwindcss(),
     ],
+    resolve: {
+        alias: {
+            '@': '/resources/js',
+        },
+    },
+    build: {
+        rollupOptions: {
+            output: {
+                assetFileNames: (assetInfo) => {
+                    if (assetInfo.name.endsWith('.ttf') || assetInfo.name.endsWith('.woff') || assetInfo.name.endsWith('.woff2')) {
+                        return `fonts/[name].[ext]`;
+                    }
+                    return `assets/[name]-[hash][extname]`;
+                },
+            },
+        },
+    },
 });

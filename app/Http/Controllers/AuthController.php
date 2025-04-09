@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules\Password;
+use Laravel\Sanctum\PersonalAccessToken;
 
 class AuthController extends Controller
 {
@@ -19,7 +20,7 @@ class AuthController extends Controller
 
         if (Auth::attempt($credentials)) {
             $user = Auth::user();
-            $token = $user->createToken('auth-token')->plainTextToken;
+            $token = $user->createToken('auth-token', ['*'], now()->addHours(1))->plainTextToken;
             return response()->json(['token' => $token, 'user' => $user]);
         }
 
@@ -28,7 +29,17 @@ class AuthController extends Controller
 
     public function logout(Request $request)
     {
-        $request->user()->currentAccessToken()->delete();
+        // Si c'est un jeton persistant, on le supprime
+        if ($request->user()->currentAccessToken() instanceof PersonalAccessToken) {
+            $request->user()->currentAccessToken()->delete();
+        }
+
+        // Dans tous les cas, on révoque tous les jetons de l'utilisateur
+        $request->user()->tokens()->delete();
+
+        // On déconnecte l'utilisateur de la session web si nécessaire
+        Auth::guard('web')->logout();
+
         return response()->json(['message' => 'Logged out successfully']);
     }
 

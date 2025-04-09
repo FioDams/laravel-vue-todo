@@ -7,17 +7,12 @@ use Illuminate\Http\Request;
 
 class TaskController extends Controller
 {
-    public function __construct()
-    {
-        $this->middleware('auth');
-    }
-
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        return Task::all();
+        return $request->user()->tasks()->orderBy('order')->get();
     }
 
     /**
@@ -27,17 +22,53 @@ class TaskController extends Controller
     {
         $request->validate([
             'title' => 'required|string|max:255',
+            'description' => 'nullable|string',
         ]);
 
-        return Task::create($request->all());
+        return $request->user()->tasks()->create($request->all());
+
+        return response()->json($task, 201);
+    }
+
+    public function update(Request $request, Task $task)
+    {
+        // Vérification des droits
+        if ($request->user()->cannot('update', $task)) {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
+
+        $request->validate([
+            'title' => 'required|string|max:255',
+            'description' => 'nullable|string',
+        ]);
+
+        $task->update($request->all());
+
+        return response()->json($task);
     }
 
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(Task $task)
+    public function destroy(Request $request, Task $task)
     {
+        // méthode manuelle pour vérifier les droits
+        if ($request->user()->cannot('delete', $task)) {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
+
         $task->delete();
         return response()->json(null, 204);
+    }
+
+    public function reorder(Request $request)
+    {
+        $tasks = $request->input('tasks');
+
+        foreach ($tasks as $index => $task) {
+            Task::where('id', $task['id'])->update(['order' => $index]);
+        }
+
+        return response()->json(['message' => 'Tasks reordered successfully']);
     }
 }
